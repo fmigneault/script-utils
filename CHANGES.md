@@ -3,7 +3,16 @@ Changes
 =======
 
 Unreleased
-----------
+---------------------
+
+0.3.0 (2020-04-21)
+---------------------
+
+* Add ``--indent`` argument to specify the output indentation.
+* Fix incorrect object used for writing YAML format.
+
+0.2.0 (2020-04-21)
+---------------------
 
 * Add ``--json`` and ``--yaml`` arguments to specify an output format not matching with the output file extension.
 * Add ``--ignore`` argument to ignore validation of input file extension. Will try parsing either JSON/YAML.

@@ -6,7 +6,7 @@ import os
 import sys
 import yaml
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 def read_content(file_path, ignore_extension=False):
@@ -16,16 +16,16 @@ def read_content(file_path, ignore_extension=False):
         return yaml.safe_load(f)    # can read both json/yaml
 
 
-def write_content(data, file_path, file_format=None):
+def write_content(data, file_path, file_format=None, indent=None):
     if not file_format:
         file_format = os.path.splitext(file_path)[-1].replace(".", "")
     if file_format == "json":
         with open(file_path, 'w') as f:
-            json.dump(data, f)
+            json.dump(data, f, indent=indent)
             return True
     if file_format in [".yaml", ".yml"]:
         with open(file_path, 'w') as f:
-            yaml.safe_dump(f, f)
+            yaml.safe_dump(data, f, indent=indent)
             return True
     return False
 
@@ -42,6 +42,8 @@ def main():
     ap.add_argument("--version", "-v", action="version", version="%(prog)s {}".format(__version__))
     ap.add_argument("--ignore", "-i", action="store_true", dest="ignore_extension",
                     help="Ignore input file extension, try to parse as either JSON or YAML.")
+    ap.add_argument("--indent", type=int, dest="indent", default=None,
+                    help="Specify the indentation to apply to the output JSON or YAML.")
     f_out = ap.add_mutually_exclusive_group()
     f_out.add_argument("--json", "-j", action="store_const", const="json", dest="file_format", default="",
                        help="Specify the desired output format as JSON. Useful when the desired extension is not JSON.")
@@ -51,7 +53,7 @@ def main():
     if not args.file_in or not os.path.isfile(args.file_in):
         raise IOError("cannot reading: [{}]".format(args.file_in))
     data = read_content(args.file_in, ignore_extension=args.ignore_extension)
-    success = write_content(data, args.file_out, file_format=args.file_format)
+    success = write_content(data, args.file_out, file_format=args.file_format, indent=args.indent)
     if not success or not args.file_out or not os.path.isfile(args.file_out):
         raise IOError("failed writing: [{}]".format(args.file_out))
 
