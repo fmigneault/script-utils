@@ -5,6 +5,12 @@ Changes
 Unreleased
 ---------------------
 
+
+0.3.1 (2020-04-23)
+---------------------
+
+* Fix parsing of output file extension when no explicit format was specified by ``--json`` or ``--yaml``.
+
 0.3.0 (2020-04-21)
 ---------------------
 

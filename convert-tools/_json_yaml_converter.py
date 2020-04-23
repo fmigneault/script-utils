@@ -6,11 +6,11 @@ import os
 import sys
 import yaml
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 
 def read_content(file_path, ignore_extension=False):
-    if not ignore_extension and not os.path.splitext(file_path) in [".json", ".yaml", ".yml"]:
+    if not ignore_extension and os.path.splitext(file_path)[-1] not in [".json", ".yaml", ".yml"]:
         return False
     with open(file_path, 'r') as f:
         return yaml.safe_load(f)    # can read both json/yaml
@@ -18,12 +18,13 @@ def read_content(file_path, ignore_extension=False):
 
 def write_content(data, file_path, file_format=None, indent=None):
     if not file_format:
-        file_format = os.path.splitext(file_path)[-1].replace(".", "")
+        file_format = os.path.splitext(file_path)[-1]
+    file_format = file_format.replace(".", "", 1)
     if file_format == "json":
         with open(file_path, 'w') as f:
             json.dump(data, f, indent=indent)
             return True
-    if file_format in [".yaml", ".yml"]:
+    if file_format in ["yaml", "yml"]:
         with open(file_path, 'w') as f:
             yaml.safe_dump(data, f, indent=indent)
             return True
@@ -51,7 +52,7 @@ def main():
                        help="Specify the desired output format as YAML. Useful when the desired extension is not YAML.")
     args = ap.parse_args(args=args)
     if not args.file_in or not os.path.isfile(args.file_in):
-        raise IOError("cannot reading: [{}]".format(args.file_in))
+        raise IOError("failed reading: [{}]".format(args.file_in))
     data = read_content(args.file_in, ignore_extension=args.ignore_extension)
     success = write_content(data, args.file_out, file_format=args.file_format, indent=args.indent)
     if not success or not args.file_out or not os.path.isfile(args.file_out):
