@@ -3,7 +3,7 @@
 Removes older versions of corresponding docker images according their repository tags.
 """
 
-__version__ = "0.3.1"
+__version__ = "0.1.0"
 
 import argparse
 import logging
