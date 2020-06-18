@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# remove all dead images that are untagged (dangling) and not employed by any other child image
+docker rmi -f $(docker images -f "dangling=true" --all -q) 2>/dev/null || true
+docker ps --filter status=dead --filter status=exited -aq | xargs docker rm -v 2>/dev/null || true
+
