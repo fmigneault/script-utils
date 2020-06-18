@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+CUR_DIR=$(dirname $(realpath $0))
+python ${CUR_DIR}/_docker_clean_old.py --name "$0" "$@"

@@ -5,6 +5,7 @@ Changes
 Unreleased
 ---------------------
 
+* Add ``docker-tools`` with cleanup operation of old and unused images.
 
 0.3.1 (2020-04-23)
 ---------------------
