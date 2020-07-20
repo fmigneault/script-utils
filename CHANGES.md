@@ -2,6 +2,11 @@
 Changes
 =======
 
+1.1.0 (2020-07-20)
+---------------------
+
+* Add ``file-tools`` with Google Drive Download operation.
+
 1.0.0 (2020-06-17)
 ---------------------
 

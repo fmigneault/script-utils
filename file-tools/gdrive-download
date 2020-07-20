@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+CUR_DIR=$(dirname $(realpath $0))
+python ${CUR_DIR}/_gdrive-download.py "$@"
