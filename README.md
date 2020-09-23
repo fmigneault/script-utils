@@ -18,3 +18,9 @@ Run operations on docker images.
 - Cleanup
     - `docker-clean-unused`
     - `docker-clean-old`
+
+## merge-tools
+
+Merging operations between files of similar or complementary content.
+
+- CWL => OGC-API Process deploy payload: `merge_cwl_app_deploy`

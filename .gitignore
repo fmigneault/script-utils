@@ -1,2 +1,9 @@
+## IDE
 .idea/
 .vscode/
+
+## Some files handled by tools
+*.cwl
+*.json
+*.log
+*.y[a]ml
