@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+CUR_DIR=$(dirname "$(realpath "$0")")
+python ${CUR_DIR}/merge_cwl_app_deploy.py "$@"
+

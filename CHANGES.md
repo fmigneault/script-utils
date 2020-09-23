@@ -2,6 +2,13 @@
 Changes
 =======
 
+1.1.0 (2020-09-23)
+---------------------
+
+* Add ``merge-tools`` with `CWL` insertion within an OGC-API Process as Application Package
+  (see: [crim-ca/weaver](https://pavics-weaver.readthedocs.io/en/latest/) and 
+  [crim-ca/application-packages](https://github.com/crim-ca/application-packages)).
+
 1.0.0 (2020-06-17)
 ---------------------
 
