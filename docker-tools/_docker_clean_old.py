@@ -123,7 +123,7 @@ def docker_clean_old(keep_count=1, include_latest=True, sort_method="version", d
     cmd_img = "docker images --format '{{.Repository}} {{.Tag}}'"   # already sorted by newest to oldest creation
     proc = subprocess.Popen(cmd_img, shell=True, universal_newlines=True, stdout=subprocess.PIPE)
     output = proc.communicate()[0]
-    output = output.split("\n")[1:-1]
+    output = output.split("\n")
     images = {}
     for row in output:
         img, tag = row.split(" ", 1)
