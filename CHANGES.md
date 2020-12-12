@@ -6,7 +6,7 @@ Changes
 ---------------------
 
 ### convert-tools
-* N/A
+* Add ``json2yml`` redirect to main ``JSON <=> YAML`` converter to have equivalent of ``yml2json`` (without ``a``). 
 
 ### docker-tools
 * Add ``--ignore-repo`` option to allow combination of similarly tagged images with/without repository prefix.
