@@ -2,6 +2,8 @@
 
 A bunch of scripts to be used as utility tools.
 
+All tools employ either low-level ``bash`` or ``python`` scripts with a minimal amount of dependencies. 
+
 ## convert-tools
 
 Convert items between corresponding formats.
@@ -15,7 +17,7 @@ Convert items between corresponding formats.
 
 Run operations on docker images.
 
-- Cleanup
+- Conditional Cleanup
     - `docker-clean-unused`
     - `docker-clean-old`
 

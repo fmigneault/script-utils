@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Removes older versions of corresponding docker images according their repository tags.
+Removes older versions of corresponding docker images according to their repository tags.
 """
 
 __version__ = "0.1.0"
@@ -19,6 +19,7 @@ LOGGER.setLevel(logging.INFO)
 STATUS_REMOVE = "-"
 STATUS_EXCLUDE = "e"
 STATUS_INCLUDE = "i"
+STATUS_FORCED = "f"
 STATUS_KEEP = " "
 
 
@@ -58,6 +59,7 @@ class LatestVersion(LooseVersion):
     ver_int = None
     ver_num = None
     latest = None
+    version = None
 
     def parse(self, vstring):
         super(LatestVersion, self).parse(vstring)
@@ -98,26 +100,26 @@ class LatestVersion(LooseVersion):
         return super(LatestVersion, self).__lt__(other)
 
 
-def dry_run_results(sorted_images, keep_count):
+def dry_run_results(sorted_images, keep_count, order_names):
     LOGGER.info("Would apply following changes on images:")
     LOGGER.info(" %s: keep", STATUS_KEEP)
     LOGGER.info(" %s: remove", STATUS_REMOVE)
     LOGGER.info(" %s: include", STATUS_INCLUDE)
     LOGGER.info(" %s: exclude", STATUS_EXCLUDE)
     LOGGER.info("----------------------------------------")
-    for img in sorted_images:
+    for img_key in sorted(sorted_images) if order_names else sorted_images:
         k = 0
-        for i, info in reversed(list(enumerate(sorted_images[img]))):
+        for i, info in reversed(list(enumerate(sorted_images[img_key]))):
             if info[0] in [STATUS_EXCLUDE, STATUS_INCLUDE]:
                 continue
-            sorted_images[img][i][0] = STATUS_KEEP if k < keep_count else STATUS_REMOVE
+            sorted_images[img_key][i][0] = STATUS_KEEP if k < keep_count else STATUS_REMOVE
             k = k + 1
-        for status, tag in sorted_images[img]:
+        for status, img, tag in sorted_images[img_key]:
             LOGGER.info("%s %s:%s", status, img, tag.vstring)
 
 
 def docker_clean_old(keep_count=1, include_latest=True, sort_method="version", dry_run=False,
-                     exclude_images=None, include_images=None):
+                     exclude_images=None, include_images=None, ignore_repo=False):
     include_images = include_images or []
     exclude_images = exclude_images or []
     cmd_img = "docker images --format '{{.Repository}} {{.Tag}}'"   # already sorted by newest to oldest creation
@@ -127,36 +129,45 @@ def docker_clean_old(keep_count=1, include_latest=True, sort_method="version", d
     images = {}
     for row in output:
         img, tag = row.split(" ", 1)
+        repo, raw_img = img.rsplit("/") if "/" in img else None, img
+        img_tag = "{}:{}".format(img, tag)
+        img_key = raw_img if ignore_repo else img
         status = None
         if img in exclude_images:
             status = STATUS_EXCLUDE
-        if "{}:{}".format(img, tag) in exclude_images:
+        if img_tag in exclude_images:
+            status = STATUS_EXCLUDE
+        if ignore_repo and raw_img in exclude_images:
             status = STATUS_EXCLUDE
         if img in include_images:
             status = STATUS_INCLUDE
-        if "{}:{}".format(img, tag) in include_images:
+        if img_tag in include_images:
             status = STATUS_INCLUDE
+        if ignore_repo and raw_img in include_images:
+            status = STATUS_INCLUDE
+        if tag == "<none>" or img == "<none>":
+            status = STATUS_FORCED
         if tag == "latest":
             if not include_latest:
                 status = STATUS_EXCLUDE
         if status == STATUS_EXCLUDE and not dry_run:
             continue
-        images.setdefault(img, [])
-        images[img].append([status, LatestVersion(tag)])
+        images.setdefault(img_key, [])
+        images[img_key].append([status, img, LatestVersion(tag)])
     if sort_method == "date":
         sorted_images = images
     else:
         sorted_images = {}
-        for img in images:
-            sorted_images[img] = list(sorted(images[img], key=lambda x: x[1]))
+        for key in images:
+            sorted_images[key] = list(sorted(images[key], key=lambda x: x[2]))
     if dry_run:
-        dry_run_results(sorted_images, keep_count)
+        dry_run_results(sorted_images, keep_count, order_names=(sort_method == "alpha"))
         return
     img_all = []
     img_to_rm = []
-    for img in images:
-        img_all.extend(["{}:{}".format(img, tag.vstring) for _, tag in sorted_images[img]])
-        img_to_rm.extend(["'{}:{}'".format(img, tag.vstring) for _, tag in sorted_images[img][:-keep_count]])
+    for img_key in images:
+        img_all.extend(["{}:{}".format(img, tag.vstring) for _, img, tag in sorted_images[img_key]])
+        img_to_rm.extend(["'{}:{}'".format(img, tag.vstring) for _, img, tag in sorted_images[img_key][:-keep_count]])
     for incl in include_images:
         if incl in img_all and incl not in img_to_rm:
             img_to_rm.append('{}'.format(incl))
@@ -174,13 +185,22 @@ def parse():
         args = args[2:]
     ap = argparse.ArgumentParser(name, description=__doc__, add_help=True)
     ap.add_argument("--version", "-v", action="version", version="%(prog)s {}".format(__version__))
-    ap.add_argument("--sort", "-s", type=str, choices=["date", "version"], default="version", dest="sort_method",
-                    help="Sort method of images. Can be by date or by semantic version string.")
-    ap.add_argument("--keep-count", "-n", type=int, default=1, dest="keep_count",
+    ap.add_argument("--sort", "-s", type=str, choices=["alpha", "date", "version"], default="alpha", dest="sort_method",
+                    help="Sort method of images (only applicable for result preview with '--dry'). "
+                         "With 'date', image creation date will be employed, which makes any other name possible. "
+                         "With 'version', matched image names are sorted by semantic version string, but groups of "
+                         "corresponding image names will not necessarily be sorted themselves. "
+                         "With 'alpha', complete sorting of names followed by versions is accomplished. "
+                         "Matching image groups by tag names depend on '--ignore-repo' option.")
+    ap.add_argument("--keep", "-k", type=int, default=1, dest="keep_count",
                     help="Number of latest corresponding image tags to preserve.")
     ap.add_argument("--latest", "-l", action="store_true", dest="include_latest",
                     help="Include 'latest' tag as one of the N images to preserve, otherwise ignore it completely. "
                          "Tag 'latest' is always placed as most recent if using semantic version string.")
+    ap.add_argument("--ignore-repo", "-r", action="store_true", dest="ignore_repo",
+                    help="Match images together regardless of their repository prefix. "
+                         "For example, 'my-repo/my-image:1.0' will be matched with plain 'my-image:1.0' tag. "
+                         "This applies for both latest version resolution and include/exclude matching.")
     ap.add_argument("--dry", "--dry-run", action="store_true", dest="dry_run",
                     help=("Run in dry-run mode. "
                           "No image actually gets removed, only listing images that are kept ({}), ones that would be "
