@@ -9,8 +9,10 @@ Changes
 * Add ``json2yml`` redirect to main ``JSON <=> YAML`` converter to have equivalent of ``yml2json`` (without ``a``). 
 
 ### docker-tools
-* Add ``--ignore-repo`` option to allow combination of similarly tagged images with/without repository prefix.
+* Change resolver to employ same path as the dry-run parser, but apply remove afterwards to ensure same results.
 * Change flag ``-n`` to ``-k`` and rename long form ``--keep-count`` to ``--keep``.
+* Add enforced removal (``f`` annotation) of untagged dangling image tags (``<none>`` name and/or version).
+* Add ``--ignore-repo`` option to allow combination of similarly tagged images with/without repository prefix.
 * Add basic tests to validate minimal features behaviour.
 
 ### merge-tools
