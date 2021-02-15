@@ -2,20 +2,21 @@
 
 A bunch of scripts to be used as utility tools.
 
+All tools employ either low-level ``bash`` or ``python`` scripts with a minimal amount of dependencies. 
+
 ## convert-tools
 
 Convert items between corresponding formats.
 
 - JSON <=> YAML
-    - `json2yaml`
-    - `yaml2json`
-    - `yml2json`
+    - `json2yaml` or `json2yml`  
+    - `yaml2json` or `yml2json`
 
 ## docker-tools
 
 Run operations on docker images.
 
-- Cleanup
+- Conditional Cleanup
     - `docker-clean-unused`
     - `docker-clean-old`
 
