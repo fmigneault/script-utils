@@ -126,6 +126,8 @@ def docker_clean_old(keep_count=1, include_latest=True, sort_method="version", d
     output = output.split("\n")
     images = {}
     for row in output:
+        if not row:  # avoid parsing empty lines
+            continue
         img, tag = row.split(" ", 1)
         status = None
         if img in exclude_images:
