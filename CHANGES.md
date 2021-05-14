@@ -2,7 +2,14 @@
 Changes
 =======
 
-1.2.0
+Unreleased
+---------------------
+
+### git-tools
+* Add `changes` that helps generate a `CHANGES.rst` file from an existing history of 
+  semantic versioning tags from a Github repository.
+
+1.2.0 (2021-02-15)
 ---------------------
 
 ### convert-tools
