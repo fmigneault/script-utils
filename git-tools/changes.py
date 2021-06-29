@@ -5,7 +5,7 @@ The commit contents where the tag versions were placed are used to generate the
 content under each version section inside the changes.
 
 """
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 # above are used to generate the CLI description
 
 import argparse
@@ -16,11 +16,11 @@ import os
 from distutils.version import LooseVersion
 
 
-def generate_changes(repo, output, oauth_token=None, cache=True):
-
-    if os.path.isdir(output) or not output.endswith(".rst"):
-        output = os.path.join(output, "CHANGES.rst")
-
+def generate_changes(repo, output, output_format, oauth_token=None, cache=True):
+    ext = ".{}".format(output_format)
+    if os.path.isdir(output) or not output.endswith(ext):
+        output = os.path.join(output, "CHANGES" + ext)
+    output = os.path.abspath(output)
     out_dir = os.path.abspath(os.path.dirname(output))
     os.makedirs(out_dir, exist_ok=True)
 
@@ -74,29 +74,53 @@ def generate_changes(repo, output, oauth_token=None, cache=True):
     if not tag_messages:
         raise ValueError("Missing tag information!")
 
-    separator_line = "=" * 120
-    change_lines = [
-        ".. :changelog:",
-        "",
-        "Changes",
-        "*******",
-        "",
-        ".. **DEFINE LATEST CHANGES UNDER BELOW 'Unreleased' SECTION - THEY WILL BE INTEGRATED IN NEXT RELEASE**",
-        "",
-        "`Unreleased <https://github.com/{}/tree/master>`_ (latest)".format(repo),
-        separator_line,
-        "",
-        "- <changes here> ...",
-        "",
-    ]
-
-    new_version_lines = [
-        "`{{tag}} <https://github.com/{}/tree/{{tag}}>`_ ({{date}})".format(repo),
-        separator_line,
-        "",
-    ]
+    change_info = "**DEFINE LATEST CHANGES UNDER BELOW 'Unreleased' SECTION - THEY WILL BE INTEGRATED IN NEXT RELEASE**"
+    change_list = "list changes here, using '-' for each new entry (remove this when items are added)"
+    if output_format == "rst":
+        separator_line = "=" * 120
+        version_line = "`{{tag}} <https://github.com/{}/tree/{{branch}}>`_ ({{date}})".format(repo)
+        new_version_lines = [
+            version_line,
+            separator_line,
+            "",
+        ]
+        comment_line = ".. {}"
+        change_lines = [
+            ".. :changelog:",
+            "",
+            "Changes",
+            "*******",
+            "",
+            comment_line.format(change_info),
+            "",
+            version_line.format(tag="Unreleased", branch="master", date="latest"),
+            separator_line,
+            "",
+            comment_line.format(change_list),
+            "",
+        ]
+    elif output_format == "md":
+        version_line = "## [{{tag}}](https://github.com/{}/tree/{{branch}}) ({{date}})".format(repo)
+        new_version_lines = [
+            version_line,
+            "",
+        ]
+        comment_line = "[//]: # {}"
+        change_lines = [
+            "# Changes",
+            "",
+            comment_line.format(change_info),
+            "",
+            version_line.format(tag="Unreleased", branch="master", date="latest"),
+            "",
+            comment_line.format(change_list),
+            "",
+        ]
+    else:
+        raise NotImplementedError("Unknown format: [{}]".format(output_format))
 
     for tag_info in tag_messages:
+        tag_info.setdefault("branch", tag_info["tag"])
         version_lines = copy.deepcopy(new_version_lines)
         version_lines[0] = version_lines[0].format(**tag_info)
         message_lines = tag_info["message"].splitlines()
@@ -105,17 +129,23 @@ def generate_changes(repo, output, oauth_token=None, cache=True):
         message_lines[0] = "- " + message_lines[0]
         if len(message_lines) > 1:
             message_lines[1:] = ["  " + m for m in message_lines[1:]]
+        message_lines = [m.rstrip() for m in message_lines]
         change_lines.extend(version_lines + message_lines + [""])
 
     with open(output, "w") as changes_file:
         changes_file.writelines(line + "\n" for line in change_lines)
-    print("Output generated: {}".format(output))
+    print("Output generated: [{}]".format(output))
 
 
 def main():
     ap = argparse.ArgumentParser(prog="changes", description=__doc__, add_help=True)
     ap.add_argument("repo", help="Repository [organization/repository] to employ for fetching tags.")
-    ap.add_argument("--output", "-o", default="CHANGES.rst", help="Output location of CHANGES.rst file.")
+    ap.add_argument("--output", "-o", default=os.path.curdir,
+                    help="Output location of CHANGES file (default: 'CHANGES.<format>'). "
+                         "Extension is based on the selected format if output is a directory. "
+                         "Generates in the current directory by default.")
+    ap.add_argument("--format", "-f", default="rst", choices=["rst", "md"],
+                    help="Desired output format of the CHANGES file (rst: reStructuredText, md: Markdown).")
     ap.add_argument("--token", "-t",
                     help="OAuth Token to use to access the repository. "
                          "This can be used both for private repository access, but also to "
@@ -125,7 +155,7 @@ def main():
                          "Caching avoids quickly reaching request rate-limit that blocks access to metadata.")
     ap.add_argument("--version", "-v", action="version", version="%(prog)s {}".format(__version__))
     args = ap.parse_args()
-    generate_changes(args.repo, args.output, args.token, args.cache)
+    generate_changes(args.repo, args.output, args.format, args.token, args.cache)
 
 
 if __name__ == "__main__":
