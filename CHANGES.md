@@ -2,6 +2,13 @@
 Changes
 =======
 
+1.4.0 (2021-06-28)
+---------------------
+
+### git-tools
+* Add support for `Markdown` changes generation from repository tag history.
+* Add option ``--format`` to allow selection between `Markdown` and `reStructuredText` changes file creation.
+  
 1.3.0 (2021-05-14)
 ---------------------
 
