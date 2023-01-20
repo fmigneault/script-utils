@@ -2,6 +2,13 @@
 Changes
 =======
 
+1.5.0 (2022-01-20)
+---------------------
+
+### convert-tools
+* Add option `--sort` to enable automatic sorting of mapping keys when converting JSON/YAML files (default: `False`).
+* Add option `--ascii` to force character conversion to ASCII instead of unicode for JSON/YAML files (default: `False`).
+
 1.4.0 (2021-06-28)
 ---------------------
 
@@ -14,7 +21,7 @@ Changes
 
 ### git-tools
 * Add `changes` that helps generate a `CHANGES.rst` file from an existing history of 
-  semantic versioning tags from a Github repository.
+  semantic versioning tags from a GitHub repository.
 
 1.2.0 (2021-02-15)
 ---------------------
