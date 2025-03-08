@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# https://superuser.com/a/1350942
+dd if=/dev/zero of=/bigemptyfile bs=4096k status=progress
+rm -f /bigemptyfile
+
