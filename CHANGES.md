@@ -2,6 +2,14 @@
 Changes
 =======
 
+1.6.0 (2025-09-10)
+---------------------
+
+### docker-tools
+* Add option `--only`  to `docker-clean-old` tool allowing the operation to be applied to a limited subset of images.
+* Change options `--include`, `--exclude` and `--only` to allow providing them multiple times or once with multiple
+  values per option interchangeably.
+
 1.5.0 (2022-01-20)
 ---------------------
 

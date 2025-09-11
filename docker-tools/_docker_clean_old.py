@@ -142,8 +142,8 @@ class LatestVersion(LooseVersion):
         return super(LatestVersion, self).__lt__(other)
 
 
-def resolve_amount_remove(input_images, keep_count, include_images, exclude_images, sort_method,
-                          include_latest=False, ignore_repo=False,dry_run=True):
+def resolve_amount_remove(input_images, keep_count, *, include_images, exclude_images, only_images, sort_method,
+                          include_latest=False, ignore_repo=False, dry_run=True):
     images = {}
     order_names = (sort_method == "alpha")
     for row in input_images:
@@ -172,6 +172,12 @@ def resolve_amount_remove(input_images, keep_count, include_images, exclude_imag
             if not include_latest:
                 status = STATUS_EXCLUDE
         if status == STATUS_EXCLUDE and not dry_run:
+            continue
+        if (
+            only_images and 
+            img not in only_images and 
+            img_tag not in only_images
+        ):
             continue
         images.setdefault(img_key, [])
         images[img_key].append([status, img, LatestVersion(tag)])
@@ -207,9 +213,13 @@ def resolve_amount_remove(input_images, keep_count, include_images, exclude_imag
 
 
 def docker_clean_old(keep_count=1, include_latest=True, sort_method="alpha", dry_run=False,
-                     exclude_images=None, include_images=None, ignore_repo=False):
+                     exclude_images=None, include_images=None, only_images=None, ignore_repo=False):
     include_images = include_images or []
+    include_images = [img for images in include_images for img in images]
     exclude_images = exclude_images or []
+    exclude_images = [img for images in exclude_images for img in images]
+    only_images = only_images or []
+    only_images = [img for images in only_images for img in images]
     cmd_img = "docker images --format '{{.Repository}} {{.Tag}}'"   # already sorted by newest to oldest creation
     LOGGER.debug("Full listing command: [%s]".format(cmd_img))
     proc = subprocess.Popen(cmd_img, shell=True, universal_newlines=True, stdout=subprocess.PIPE)
@@ -217,7 +227,8 @@ def docker_clean_old(keep_count=1, include_latest=True, sort_method="alpha", dry
     output = output.split("\n")
     remove_tags = resolve_amount_remove(output, keep_count, sort_method=sort_method, dry_run=dry_run,
                                         include_images=include_images, exclude_images=exclude_images,
-                                        include_latest=include_latest, ignore_repo=ignore_repo)
+                                        include_latest=include_latest, ignore_repo=ignore_repo,
+                                        only_images=only_images)
     if dry_run:
         LOGGER.debug("All done (dry-run).")
         return
@@ -261,14 +272,21 @@ def parse():
                           "removed ({}), and ones excluded ({}). Listing is sorted from oldest to newest.").format(
                         STATUS_KEEP, STATUS_REMOVE, STATUS_EXCLUDE
                     ))
-    ap.add_argument("--exclude", "-e", type=str, nargs="*", dest="exclude_images",
+    ap.add_argument("--exclude", "-e", type=str, nargs="+", action="append", dest="exclude_images",
                     help="Images to exclude from the operation, "
                          "either without tag to exclude all corresponding ones by repository, "
                          "or with a tag to exclude only that specific one.")
-    ap.add_argument("--include", "-i", type=str, nargs="*", dest="include_images",
+    ap.add_argument("--include", "-i", type=str, nargs="+", action="append", dest="include_images",
                     help="Images to include in remove operation regardless of previous rules, "
                          "either without tag to include all corresponding ones by repository, "
                          "or with a tag to include only that specific one.")
+    ap.add_argument("--only", "-o", type=str, nargs="+", action="append", dest="only_images",
+                    help="Include only the specified images for consideration in the remove operation. "
+                         "If none is provided, all images are candidates before filtering with other rules. "
+                         "Otherwise, only these images are included by default, and other filtering rules "
+                         "are applied onto this subset of images, or added to them if explicitly included. "
+                         "The values can be a repository to match all corresponding tags, or directly specific tags."
+                    )
     return ap.parse_args(args=args)
 
 
