@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
+VERSION="1.6.0"
+
+if [[ "${1:-}" == "--version" || "${1:-}" == "-v" ]]; then
+  echo "$(basename "$0") ${VERSION}"
+  exit 0
+fi
+
 # https://superuser.com/a/1350942
 dd if=/dev/zero of=/bigemptyfile bs=4096k status=progress
 rm -f /bigemptyfile
-

@@ -1,0 +1,60 @@
+[project]
+name = "script-utils"
+version = "1.6.0"
+description = "Utility CLI scripts for conversion, Docker cleanup, merge operations, and git changelog generation."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+	"pyyaml",
+	"requests",
+	"packaging",
+]
+
+[project.optional-dependencies]
+dev = [
+	"mock",
+	"pytest",
+	"bump-my-version",
+]
+
+[tool.bumpversion]
+current_version = "1.6.0"
+parse = '(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)'
+serialize = ["{major}.{minor}.{patch}"]
+search = "{current_version}"
+replace = "{new_version}"
+regex = false
+ignore_missing_version = true
+tag = true
+tag_name = "v{new_version}"
+tag_message = "Release {new_version}"
+commit = false
+
+[[tool.bumpversion.files]]
+filename = "CHANGES.md"
+search = """Unreleased
+---------------------
+"""
+replace = """Unreleased
+---------------------
+
+<!-- Add any unreleased changes here, and remove this section when releasing a new version. -->
+
+{new_version} ({now:%Y-%m-%d})
+---------------------
+"""
+
+[[tool.bumpversion.files]]
+glob = "*-tools/*.py"
+search = "__version__ = \"{current_version}\""
+replace = "__version__ = \"{new_version}\""
+
+[[tool.bumpversion.files]]
+filename = "docker-tools/docker-clean-unused"
+search = "VERSION=\"{current_version}\""
+replace = "VERSION=\"{new_version}\""
+
+[[tool.bumpversion.files]]
+filename = "shell-tools/defrag"
+search = "VERSION=\"{current_version}\""
+replace = "VERSION=\"{new_version}\""

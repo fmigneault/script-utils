@@ -11,12 +11,15 @@ import sys
 import json
 import yaml
 
+__version__ = "1.6.0"
+
 
 def make_parser():
     name = os.path.splitext(os.path.split(__file__)[-1])[0]
     ap = argparse.ArgumentParser(prog=name, description=__doc__, add_help=True)
     ap.add_argument("app_package", help="Location of the CWL Application Package file.")
     ap.add_argument("process_deploy", help="Location of the process deployment file.")
+    ap.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
     return ap
 
 
