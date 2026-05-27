@@ -2,6 +2,10 @@
 .idea/
 .vscode/
 
+## Python Caches
+**/__pycache__/
+**/.pytest_cache/
+
 ## Some files handled by tools
 *.cwl
 *.json

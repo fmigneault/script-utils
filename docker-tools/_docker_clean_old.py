@@ -8,10 +8,11 @@ __version__ = "0.1.0"
 import argparse
 import logging
 import os
+import re
 import subprocess
 import sys
-from distutils.version import LooseVersion
 from functools import total_ordering
+from packaging.version import Version
 
 LOGGER = logging.getLogger("docker-clean-old")
 LOGGER.addHandler(logging.StreamHandler(sys.stdout))
@@ -25,7 +26,7 @@ STATUS_KEEP = " "
 
 
 @total_ordering
-class LatestVersion(LooseVersion):
+class LatestVersion(Version):
     """
     Version handler that sorts tags as follows (newest to oldest):
 
@@ -59,55 +60,99 @@ class LatestVersion(LooseVersion):
     The behaviour is primarily intended to keep '<version>' and '[prefix-]<version>[-suffix]' variations
     close together when sorting them for complete listing of related elements.
     """
-    ver_int = None  # indicates if a 'x.y.z' version is available
-    ver_num = None  # value of the 'x.y.z' if available
-    ver_var_pre = None   # value of variant if present before 'x.y.z' (eg: 'test-x.y.z')
-    ver_var_post = None  # value of variant if present after 'x.y.z' (eg: 'x.y.z-dev')
-    latest = None   # is literal 'latest' keyword
-    version = None  # version elements split by '.', with isolated '-' and other variants (eg: [1, 2, 3, '-', 'dev'])
+    __slots__ = (
+        "vstring",
+        "ver_int",
+        "ver_num",
+        "ver_var_pre",
+        "ver_var_post",
+        "latest",
+        "version",
+        "_parsed_components",
+    )
 
-    def parse(self, vstring):
-        super(LatestVersion, self).parse(vstring)
+    @staticmethod
+    def _parse_components(vstring: str) -> list[str]:
+        component_re = re.compile(r"(\d+ | [a-z]+ | \.)", re.VERBOSE)
+        components = [x for x in component_re.split(vstring) if x and x != "."]
+        for i, obj in enumerate(components):
+            try:
+                components[i] = int(obj)
+            except ValueError:
+                pass
+        return components
+
+    @staticmethod
+    def _compare_components(left, right):
+        for a, b in zip(left, right):
+            if a == b:
+                continue
+            if isinstance(a, int) and isinstance(b, int):
+                return a < b
+            if isinstance(a, str) and isinstance(b, str):
+                return a < b
+            return isinstance(a, int)
+        return len(left) < len(right)
+
+    def __init__(self, vstring=""):
+        normalized = vstring[1:] if vstring.startswith("v") and len(vstring) > 1 and vstring[1].isdigit() else vstring
+        if normalized == "latest":
+            normalized = "0"
+        try:
+            super().__init__(normalized)
+        except Exception:  # noqa
+            super().__init__("0")
+        self.parse(vstring)
+
+    def __repr__(self):
+        return f"<Version('{self.vstring}')>"
+
+    def parse(self, vstring: str) -> None:
+        self.vstring = vstring
+        self.ver_var_pre = None
+        self.ver_var_post = None
+        parsed = self._parse_components(vstring)
         # if parsed element are not 'x[.y[.z]]' formatted, the first version index will be its literal string
         # otherwise, version will be a list of the corresponding numbers, with always at least one integer
-        if len(self.version) > 1 and self.version[0] == 'v' and isinstance(self.version[1], int):
-            self.version = self.version[1:]
-        self.ver_int = self.version
+        if len(parsed) > 1 and parsed[0] == "v" and isinstance(parsed[1], int):
+            parsed = parsed[1:]
+        self.ver_int = parsed
         if "-" in vstring:
-            at = self.version.index("-")
-            pre_ver = self.version[:at]
-            mid_ver = self.version[at + 1:]  # +1 to skip found '-'
+            at = parsed.index("-")
+            pre_ver = parsed[:at]
+            mid_ver = parsed[at + 1:]  # +1 to skip found '-'
             post_ver = []
             # if there was a 2nd variant, assume it is post (don't support 'pre-pre-1.2.3-post')
             if "-" in mid_ver:
                 at = mid_ver.index("-")
                 post_ver = mid_ver[at + 1:]
                 mid_ver = mid_ver[:at]
-            pre = LooseVersion(".".join(str(v) for v in pre_ver))
+            pre = self._parse_components(".".join(str(v) for v in pre_ver))
             # if prefix variant is actually the version itself,
             # convert back middle and post and combined post variant
-            if isinstance(pre.version[0], int):
-                self.ver_int = pre.version
+            if pre and isinstance(pre[0], int):
+                self.ver_int = pre
                 # rebuild from original to avoid removed '.', '-' from parsing
                 # use version string + start of following variant to have more robust split
                 # since parsed version middle part could be repeated or very few characters
-                mid_loc = "{}-{}".format(pre, mid_ver[0])
+                mid_loc = "{}-{}".format(".".join(str(v) for v in pre), mid_ver[0])
                 self.ver_var_post = str(mid_ver[0]) + str(vstring.split(mid_loc)[-1])
             # otherwise the prefix variant is actually a prefix
             # figure out if there is any version after it
             else:
-                ver = LooseVersion(".".join(str(v) for v in mid_ver))
-                if isinstance(ver.version[0], int):
-                    self.ver_int = ver.version
+                ver = self._parse_components(".".join(str(v) for v in mid_ver))
+                if ver and isinstance(ver[0], int):
+                    self.ver_int = ver
                     self.ver_var_post = post_ver
                 self.ver_var_pre = pre_ver
 
         self.ver_num = isinstance(self.ver_int[0], int)
         # undo int() conversion to compare with other words
-        self.version = [str(v) for v in self.version]  # noqa
+        self._parsed_components = parsed
+        self.version = [str(v) for v in parsed]  # noqa
         self.latest = self.version[0] == "latest"
 
-    def __lt__(self, other):
+    def __lt__(self, other: "LatestVersion | str") -> bool:
         if not isinstance(other, LatestVersion):
             other = LatestVersion(other)
         # compare two numbers normally
@@ -123,6 +168,10 @@ class LatestVersion(LooseVersion):
                 # if they have the same prefix variants, fallback to post one
                 if self.ver_var_pre and self.ver_var_pre != other.ver_var_pre:
                     return self.ver_var_pre < other.ver_var_pre
+                elif self.ver_var_post and other.ver_var_post:
+                    self_post_parts = self._parse_components(str(self.ver_var_post))
+                    other_post_parts = self._parse_components(str(other.ver_var_post))
+                    return self_post_parts < other_post_parts
                 elif self.ver_var_post:
                     return self.ver_var_post < other.ver_var_post
             # when no variants, only numbers
@@ -139,7 +188,12 @@ class LatestVersion(LooseVersion):
         if other.ver_num:
             return True
         # both words, simple compare
-        return super(LatestVersion, self).__lt__(other)
+        return self._compare_components(self._parsed_components, other._parsed_components)
+
+    def __eq__(self, other):
+        if not isinstance(other, LatestVersion):
+            other = LatestVersion(other)
+        return not self < other and not other < self
 
 
 def resolve_amount_remove(input_images, keep_count, *, include_images, exclude_images, only_images, sort_method,
@@ -174,8 +228,8 @@ def resolve_amount_remove(input_images, keep_count, *, include_images, exclude_i
         if status == STATUS_EXCLUDE and not dry_run:
             continue
         if (
-            only_images and 
-            img not in only_images and 
+            only_images and
+            img not in only_images and
             img_tag not in only_images
         ):
             continue
