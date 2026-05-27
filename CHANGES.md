@@ -1,6 +1,19 @@
-
 Changes
 =======
+
+Unreleased
+---------------------
+
+### docker-tools
+* Fix `docker-clean-old` to properly handle images with multiple tags to ensure that the most recent tags
+  are preserved when considering extended suffix elements.
+
+### maintenance
+* Add `bump-my-version` configuration to update release tags, changelog unreleased update, and version references.
+* Move runtime and development dependency declarations to `pyproject.toml`.
+* Add missing `--version` / `-v` options to CLI tools that did not expose a version.
+* Replace all per-tool version tracking with a single version for the whole package.
+* Replace `distutils` version parsing with `packaging` library to avoid deprecated package.
 
 1.6.0 (2025-09-10)
 ---------------------
@@ -23,19 +36,19 @@ Changes
 ### git-tools
 * Add support for `Markdown` changes generation from repository tag history.
 * Add option ``--format`` to allow selection between `Markdown` and `reStructuredText` changes file creation.
-  
+
 1.3.0 (2021-05-14)
 ---------------------
 
 ### git-tools
-* Add `changes` that helps generate a `CHANGES.rst` file from an existing history of 
+* Add `changes` that helps generate a `CHANGES.rst` file from an existing history of
   semantic versioning tags from a GitHub repository.
 
 1.2.0 (2021-02-15)
 ---------------------
 
 ### convert-tools
-* Add ``json2yml`` redirect to main ``JSON <=> YAML`` converter to have equivalent of ``yml2json`` (without ``a``). 
+* Add ``json2yml`` redirect to main ``JSON <=> YAML`` converter to have equivalent of ``yml2json`` (without ``a``).
 
 ### docker-tools
 * Change resolver to employ same path as the dry-run parser, but apply remove afterwards to ensure same results.
@@ -55,7 +68,7 @@ Changes
 
 ### merge-tools
 * Add ``merge-tools`` with `CWL` insertion within an OGC-API Process as Application Package
-  (see: [crim-ca/weaver](https://pavics-weaver.readthedocs.io/en/latest/) and 
+  (see: [crim-ca/weaver](https://pavics-weaver.readthedocs.io/en/latest/) and
   [crim-ca/application-packages](https://github.com/crim-ca/application-packages)).
 
 1.0.0 (2020-06-17)
@@ -86,7 +99,7 @@ Changes
 ### convert-tools
 * Add ``--json`` and ``--yaml`` arguments to specify an output format not matching with the output file extension.
 * Add ``--ignore`` argument to ignore validation of input file extension. Will try parsing either JSON/YAML.
-* Add ``--version`` argument to keep track of any applied updates. 
+* Add ``--version`` argument to keep track of any applied updates.
 * Bump ``JSON <=> YAML`` convert tool to ``0.2.0``.
 * Fix current directory not used to call script from anywhere.
 

@@ -3,7 +3,7 @@
 Removes older versions of corresponding docker images according to their repository tags.
 """
 
-__version__ = "0.1.0"
+__version__ = "1.6.0"
 
 import argparse
 import logging
@@ -303,7 +303,7 @@ def parse():
         name = os.path.split(args[1])[-1]
         args = args[2:]
     ap = argparse.ArgumentParser(name, description=__doc__, add_help=True)
-    ap.add_argument("--version", "-v", action="version", version="%(prog)s {}".format(__version__))
+    ap.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
     ap.add_argument("--sort", "-s", type=str, choices=["alpha", "date", "version"], default="alpha", dest="sort_method",
                     help="Sort method of images (only applicable for result preview with '--dry'). "
                          "With 'date', image creation date will be employed, which makes any other name possible. "

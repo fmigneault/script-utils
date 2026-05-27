@@ -6,7 +6,7 @@ import os
 import sys
 import yaml
 
-__version__ = "0.3.1"
+__version__ = "1.6.0"
 
 
 def read_content(file_path, ignore_extension=False):
@@ -40,7 +40,7 @@ def main():
     ap = argparse.ArgumentParser(name, description="Tool that converts JSON<=>YAML", add_help=True)
     ap.add_argument("file_in", type=str, help="Input file from where to read data to convert (JSON or YAML).")
     ap.add_argument("file_out", type=str, help="Output file where to write converted data (JSON or YAML).")
-    ap.add_argument("--version", "-v", action="version", version="%(prog)s {}".format(__version__))
+    ap.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
     ap.add_argument("--ignore", "-i", action="store_true", dest="ignore_extension",
                     help="Ignore input file extension, try to parse as either JSON or YAML.")
     ap.add_argument("--indent", type=int, dest="indent", default=None,
